@@ -27,7 +27,7 @@ This dashboard monitors clinical trials involving artificial intelligence and ma
 The scanner maintains a live, rolling 12-month view of trials, automatically updating to show the most recent year of AI research activity on ClinicalTrials.gov.
 """)
 
-with st.expander("ℹ️ Search Methodology"):
+with st.expander("🔍 Search Methodology"):
     st.markdown("""
     ### Search Strategy
     
@@ -51,7 +51,7 @@ with st.expander("ℹ️ Search Methodology"):
     - No geographical restrictions
     """)
 
-with st.expander("🔍 Categorisation Methodology"):
+with st.expander("🏷️ Categorisation Methodology"):
     st.markdown("""
     ### How Trials are Categorised
     
@@ -332,6 +332,77 @@ if not trials_df.empty:
             height=400
         )
         st.plotly_chart(fig_sponsors, use_container_width=True)
+
+    # After the Global Leadership section and before the database section
+    st.markdown("---")  # Add divider
+    st.markdown("### 📈 AI Innovation Trends")
+    
+    col5, col6 = st.columns(2)
+
+    with col5:
+        # Monthly Growth Trend with proper datetime handling
+        trials_df['month_date'] = pd.to_datetime(trials_df['start_date'], format='mixed')
+        twelve_months_ago = datetime.now() - timedelta(days=365)
+        current_date = datetime.now()
+        
+        # Filter using datetime objects - exclude future dates
+        monthly_trend = trials_df[
+            (trials_df['month_date'] >= twelve_months_ago) & 
+            (trials_df['month_date'] <= current_date)
+        ]
+        monthly_trend['month'] = monthly_trend['month_date'].dt.strftime('%Y-%m')
+        monthly_trend = monthly_trend.groupby('month').size().reset_index()
+        monthly_trend = monthly_trend.sort_values('month')
+        
+        # Monthly Growth Trend chart
+        fig_trend = px.line(monthly_trend, x='month', y=0,
+                           title='Monthly AI Trial Initiation Trend (Last 12 Months)',
+                           labels={'month': 'Month', '0': 'New Trials'},
+                           markers=True)
+        fig_trend.update_layout(
+            title={
+                'text': 'Monthly AI Trial Initiation Trend (Last 12 Months)',
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            margin=dict(t=50, l=20, r=20, b=20),
+            height=400,
+            xaxis_tickangle=-45
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+
+    with col6:
+        # AI Type Evolution with proper datetime filtering
+        filtered_trials = trials_df[
+            (trials_df['month_date'] >= twelve_months_ago) & 
+            (trials_df['month_date'] <= current_date)
+        ]
+        filtered_trials['month'] = filtered_trials['month_date'].dt.strftime('%Y-%m')
+        
+        type_by_month = pd.crosstab(
+            filtered_trials['month'],
+            filtered_trials['ai_type']
+        ).sort_index()
+        
+        # AI Type Evolution chart
+        fig_evolution = px.area(type_by_month, 
+                              title='Evolution of AI Applications (Last 12 Months)')
+        fig_evolution.update_layout(
+            title={
+                'text': 'Evolution of AI Applications (Last 12 Months)',
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            xaxis_title='Month',
+            yaxis_title='Number of Trials',
+            showlegend=True,
+            margin=dict(t=50, l=20, r=20, b=20),
+            height=400,
+            xaxis_tickangle=-45
+        )
+        st.plotly_chart(fig_evolution, use_container_width=True)
 
     st.markdown("---")  # Add divider before database
 
