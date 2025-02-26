@@ -6,6 +6,7 @@ import urllib3
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
+import networkx as nx
 
 # Suppress SSL warning
 warnings.filterwarnings('ignore', message='urllib3 v2 only supports OpenSSL 1.1.1+')
@@ -285,12 +286,12 @@ if not trials_df.empty:
     col3, col4 = st.columns(2)
     
     with col3:
-        # Top Countries Bar Chart - with data cleaning
+        # Top Countries Bar Chart - with data cleaning and proper counting
         country_counts = pd.Series([
             country.strip()
             for locations in trials_df['locations'].dropna()
-            for country in locations.split(';')
-            if country.strip()  # Only include non-empty countries
+            for country in set(locations.split(';'))  # Use set() to count each country only once per trial
+            if country.strip()
         ]).value_counts().head(10)
         
         # Remove any empty strings or whitespace-only entries
@@ -305,8 +306,12 @@ if not trials_df.empty:
             )
         ])
         fig_countries.update_layout(
-            title='Top 10 Countries Leading AI Trials',
-            title_x=0.5,
+            title={
+                'text': 'Top 10 Countries Leading AI Trials<br><sup>Each trial counted once per country</sup>',
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
             xaxis_title='Number of Trials',
             margin=dict(t=50, l=20, r=20, b=20),
             height=400
@@ -403,6 +408,123 @@ if not trials_df.empty:
             xaxis_tickangle=-45
         )
         st.plotly_chart(fig_evolution, use_container_width=True)
+
+    # After AI Innovation Trends section
+    st.markdown("---")
+    st.markdown("### 🌐 Global Research Network")
+    
+    # Create collaboration network based on countries in same trials
+    collaborations = []
+    for _, trial in trials_df.iterrows():
+        # Get unique countries in this trial
+        countries = list(set([c.strip() for c in str(trial['locations']).split(';') if c.strip()]))
+        if len(countries) > 1:  # Only consider multi-country trials
+            for i in range(len(countries)):
+                for j in range(i+1, len(countries)):
+                    if countries[i] != countries[j]:  # Only add if countries are different
+                        collaborations.append((countries[i], countries[j]))
+    
+    # Create and populate network
+    G = nx.Graph()
+    for c1, c2 in collaborations:
+        if G.has_edge(c1, c2):
+            G[c1][c2]['weight'] += 1
+        else:
+            G.add_edge(c1, c2, weight=1)
+    
+    # Calculate node sizes based on number of trials
+    node_sizes = {node: G.degree(node, weight='weight') * 20 for node in G.nodes()}
+    
+    # Create network layout with better spacing
+    pos = nx.spring_layout(G, k=2, iterations=100)  # Increased k for more spacing
+    
+    # Create edge traces
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    
+    # Create node traces
+    node_x = []
+    node_y = []
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+    
+    # Create edges trace with better visibility
+    edges_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=1, color='rgba(169,169,169,0.5)'),  # Lighter, semi-transparent lines
+        hoverinfo='none',
+        mode='lines')
+    
+    # Create nodes trace with better labels
+    nodes_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text',
+        hoverinfo='text',
+        text=[f"{node}" for node in G.nodes()],
+        textposition="top center",
+        hovertext=[f"{node}<br>{G.degree(node)} collaborations" for node in G.nodes()],
+        marker=dict(
+            showscale=True,
+            colorscale='Viridis',  # Changed colorscale
+            size=[G.degree(node) * 10 for node in G.nodes()],  # Size based on connections
+            color=[G.degree(node) for node in G.nodes()],
+            line_width=1,
+            colorbar=dict(
+                title='Number of<br>Collaborations',
+                thickness=15,
+                x=1.02
+            )
+        ))
+
+    # Create the figure with better layout
+    fig_network = go.Figure(data=[edges_trace, nodes_trace],
+                          layout=go.Layout(
+                              title={
+                                  'text': 'Global AI Trial Collaboration Network<br><sup>Node size and color indicate number of international collaborations</sup>',
+                                  'x': 0.5,
+                                  'xanchor': 'center',
+                                  'yanchor': 'top'
+                              },
+                              showlegend=False,
+                              hovermode='closest',
+                              margin=dict(b=20,l=5,r=80,t=60),  # Adjusted margins
+                              height=600,
+                              plot_bgcolor='white',  # White background
+                              xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                              yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                          )
+    
+    st.plotly_chart(fig_network, use_container_width=True)
+    
+    # Add some insights
+    col7, col8 = st.columns(2)
+    with col7:
+        st.markdown("#### Top Collaborative Countries")
+        top_collaborators = sorted(
+            [(node, G.degree(node)) for node in G.nodes()],
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]
+        for country, degree in top_collaborators:
+            st.markdown(f"- **{country}**: {degree} collaborations")
+            
+    with col8:
+        st.markdown("#### Strongest International Partnerships")
+        strong_partnerships = sorted(
+            [(u, v, d['weight']) for (u, v, d) in G.edges(data=True)
+             if u != v],  # Ensure we're not counting same-country pairs
+            key=lambda x: x[2],
+            reverse=True
+        )[:5]
+        for c1, c2, weight in strong_partnerships:
+            st.markdown(f"- **{c1} - {c2}**: {weight} collaborative trials")
 
     st.markdown("---")  # Add divider before database
 
