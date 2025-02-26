@@ -17,11 +17,11 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("AI Clinical Trials Scanner (CM/KL Prototype)")
+st.title("AI-based Health Innovation Clinical Trials Scanner (CM/KL Prototype)")
 
 # Add this after the title but before fetching data
 st.markdown("""
-## About This App
+## About This Application
 This dashboard monitors clinical trials involving artificial intelligence and machine learning technologies, including diagnostic AI, predictive models, generative AI, and other AI applications in healthcare.
 
 The scanner maintains a live, rolling 12-month view of trials, automatically updating to show the most recent year of AI research activity on ClinicalTrials.gov.
@@ -152,7 +152,7 @@ def fetch_trials():
                 ])
             }
             
-            # Enhanced AI categorization with more specific categories
+            # Enhanced AI categorisation with more specific categories
             title_desc = (processed_study['title'] or '').lower()
             desc = (protocol.get('descriptionModule', {}).get('briefSummary', '') or '').lower()
             full_text = title_desc + ' ' + desc
@@ -161,7 +161,7 @@ def fetch_trials():
             gen_ai_terms = ['generative ai', 'gpt', 'llm', 'large language model', 'chatgpt', 
                           'stable diffusion', 'dall-e', 'text-to-image', 'foundation model']
             
-            # Categorize AI type with more specific categories
+            # Categorise AI type with more specific categories
             if any(term in full_text for term in gen_ai_terms):
                 if any(term in full_text for term in ['chat', 'language', 'text', 'nlp']):
                     processed_study['ai_type'] = 'Generative AI - Language'
@@ -180,7 +180,7 @@ def fetch_trials():
             elif any(term in full_text for term in ['monitoring', 'tracking', 'surveillance']):
                 processed_study['ai_type'] = 'Monitoring AI'
             elif any(term in full_text for term in ['optimization', 'workflow', 'efficiency']):
-                processed_study['ai_type'] = 'Process Optimization AI'
+                processed_study['ai_type'] = 'Process Optimisation AI'
             elif any(term in full_text for term in ['personalized', 'precision', 'treatment']):
                 processed_study['ai_type'] = 'Personalized Medicine AI'
             elif any(term in full_text for term in ['analysis', 'classification', 'pattern']):
