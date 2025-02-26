@@ -17,7 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("AI-based Health Innovation Clinical Trials Scanner (CM/KL Prototype)")
+st.title("Clinical Trials Monitor - AI in Health (CM/KL Prototype)")
 
 # Add this after the title but before fetching data
 st.markdown("""
