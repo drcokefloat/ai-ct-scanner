@@ -21,7 +21,7 @@ st.title("AI Clinical Trials Scanner (CM/KL Prototype)")
 
 # Add this after the title but before fetching data
 st.markdown("""
-## About This Tool
+## About This App
 This dashboard monitors clinical trials involving artificial intelligence and machine learning technologies, including diagnostic AI, predictive models, generative AI, and other AI applications in healthcare.
 
 The scanner maintains a live, rolling 12-month view of trials, automatically updating to show the most recent year of AI research activity on ClinicalTrials.gov.
